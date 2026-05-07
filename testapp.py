@@ -4,6 +4,7 @@ from tkinter import ttk
 from ollama import chat
 from ollama import ChatResponse
 import requests as req
+import os
 
 # Define colors.
 neon_green = "#18f50a"
@@ -21,10 +22,7 @@ def load_models():
             model_dropdown.current(0)
     except:
         model_dropdown["values"] = ["Ollama not running"]
-
-
-
-
+    
 
 # Submit prompt to local LLM and receive response.
 def submit():
@@ -51,6 +49,13 @@ def submit():
 # Clear prompt input field on button press.
 def reset_input():
     prompt_entry.delete(first="0", last=END)
+    
+def stop_models():
+    stop_list = req.get("http://localhost:11434/api/ps")
+    stop_list = [m["name"] for m in stop_list.json()["models"]]
+    for model in stop_list:
+        os.system("ollama stop " + model)
+    
 
 root = Tk()
 root.title("Test Bot")
@@ -70,6 +75,7 @@ style.map(
     foreground=[("active", "red"), ("!active", "white")]
 )
 
+# Main window
 mainframe = ttk.Frame(root)
 mainframe.place(
     x=0, 
@@ -77,6 +83,8 @@ mainframe.place(
     width=500, 
     height=700
 )
+
+# Chat window
 chatframe = ttk.Frame(mainframe)
 chatframe.place(
     x=0, 
@@ -84,7 +92,6 @@ chatframe.place(
     width=500, 
     height=600
 )
-
 txt = Text(
     chatframe, 
     bg="black", 
@@ -102,6 +109,7 @@ txt.place(
 # scrollbar = Scrollbar(txt)
 # scrollbar.place(relheight=1, relx=0.974)
 
+# Prompt entry
 prompt = StringVar()
 prompt_entry = ttk.Entry(
     mainframe, 
@@ -119,6 +127,7 @@ prompt_entry.place(
 
 chat_history = ""
 
+# Model selection
 model_var = tk.StringVar()
 model_dropdown = ttk.Combobox(
     mainframe, 
@@ -135,6 +144,7 @@ model_dropdown.place(
     height=30
     )
 
+# Buttons
 submit_button = ttk.Button(
     mainframe, 
     text="Submit",
@@ -150,7 +160,7 @@ quit_button = ttk.Button(
     mainframe, 
     text="Quit",
     style="danger.TButton",
-    command=root.destroy
+    command=lambda: [root.destroy(), stop_models()]
     )
 quit_button.place(
     x=400, 
@@ -159,6 +169,7 @@ quit_button.place(
     height=30
     )
 
+# Stats
 stats = Text(
     mainframe, 
     bg="black", 
