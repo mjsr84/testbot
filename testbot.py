@@ -12,6 +12,7 @@ neon_green = "#18f50a"
 DEFAULT_MODEL = "deepseek-r1:1.5b"
 MAIN_FONT = ("new_courier", 12, "bold")
 
+# Load models into dropdown menu on program start.
 def load_models():
     try:
         response = req.get("http://localhost:11434/api/tags")
@@ -23,6 +24,11 @@ def load_models():
             model_dropdown.current(0)
     except:
         model_dropdown["values"] = ["Ollama not running"]
+    
+    return
+
+# System stats.
+
 
 # Submit prompt to local LLM and receive response.
 def submit():
@@ -46,9 +52,13 @@ def submit():
     chat_history = prompt + (response.message.content)
     stats.insert(END, response_stats)
 
+    return
+
 # Clear prompt input field on button press.
 def reset_input():
     prompt_entry.delete(first="0", last=END)
+
+    return
     
 def stop_program():
     stop_list = req.get("http://localhost:11434/api/ps")
@@ -56,6 +66,8 @@ def stop_program():
     for model in stop_list:
         os.system("ollama stop " + model)
     root.destroy()
+
+    
 
 root = Tk()
 root.title("Test Bot")

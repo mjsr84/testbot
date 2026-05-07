@@ -14,38 +14,50 @@ MAIN_FONT = ("new_courier", 12, "bold")
 
 def load_models():
     try:
-        response = req.get("http://localhost:11434/api/tags")
-        models = [m["name"] for m in response.json()["models"]]
+        llm_response = req.get("http://localhost:11434/api/tags")
+        models = [m["name"] for m in llm_response.json()["models"]]
         model_dropdown["values"] = models
         if DEFAULT_MODEL in models:
-            model_var.set(DEFAULT_MODEL)
+            model_select.set(DEFAULT_MODEL)
         else:
             model_dropdown.current(0)
     except:
         model_dropdown["values"] = ["Ollama not running"]
-    
 
-# Submit prompt to local LLM and receive response.
+
+# Submit prompt to local LLM and receive llm_response.
 def submit():
     global chat_history
     global stats
+    global new_chat_history
+
     stats.delete("0.0", END)
-    prompt = chat_history + prompt_entry.get()
-    model = model_var.get()
-    response = chat(model=model, messages=[
+    
+    history = open("chat_history.txt", "r")
+    history = history.read()
+    prompt = "The following is our chat history, new prompt will follow:\n" + history + "\nNew Prompt: " + prompt_entry.get()
+    model = model_select.get()
+    llm_response = chat(model=model, messages=[
         {
             'role': 'user',
             'content': prompt
         },
     ])
-    txt.insert(END, "User: \n" + prompt_entry.get() + "\n")
-    txt.insert(END, "\nchatbot: \n" + response.message.content + "\n\n")
-    prompt_tokens = "Prompt Tokens: " + (response.prompt_eval_count).__str__()
-    response_tokens = "Response Tokens: " + (response.eval_count).__str__()
 
-    response_stats = prompt_tokens + "\n" + response_tokens
-    chat_history = prompt + (response.message.content)
-    stats.insert(END, "CPU: " + cpu_model + "\nTotal Memory: " + str(total_mem) + " GB\n\n" + response_stats)
+    txt.insert(END, "User: \n" + prompt_entry.get() + "\n")
+    txt.insert(END, "\nchatbot: \n" + llm_response.message.content + "\n\n")
+# Conversation history is saved to a text file, which is read in full and sent with each prompt to provide context. This is not the most efficient method for long conversations, but it is the simplest way to maintain conversation history without using a database or more complex data structure. Future iterations could implement a more efficient method of storing and retrieving conversation history.
+    try:
+        new_chat_history = open("chat_history.txt", "x")
+        new_chat_history.write("User: " + prompt_entry.get() + "\nLLM Response: " + llm_response.message.content + "\n")   
+    except:
+        new_chat_history = open("chat_history.txt", "a")
+        new_chat_history.write("User: " + prompt_entry.get() + "\nLLM Response: " + llm_response.message.content + "\n")
+    
+    prompt_tokens = "Prompt Tokens: " + (llm_response.prompt_eval_count).__str__()
+    llm_response_tokens = "llm_response Tokens: " + (llm_response.eval_count).__str__()
+    llm_response_stats = prompt_tokens + "\n" + llm_response_tokens
+    stats.insert(END, "CPU: " + cpu_model + "\nTotal Memory: " + str(total_mem) + " GB\n\n" + llm_response_stats)
 
 # Clear prompt input field on button press.
 def reset_input():
@@ -143,12 +155,13 @@ prompt_entry.place(
     )
 
 chat_history = ""
+new_chat_history = ""
 
 # Model selection
-model_var = tk.StringVar()
+model_select = tk.StringVar()
 model_dropdown = ttk.Combobox(
     mainframe, 
-    textvariable=model_var, 
+    textvariable=model_select, 
     state="readonly", 
     width=30
     )
