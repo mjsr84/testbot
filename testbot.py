@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import *
+from tkinter import messagebox
 from tkinter import ttk
 from ollama import chat
 from ollama import ChatResponse
@@ -22,7 +23,6 @@ def load_models():
             model_dropdown.current(0)
     except:
         model_dropdown["values"] = ["Ollama not running"]
-    
 
 # Submit prompt to local LLM and receive response.
 def submit():
@@ -50,16 +50,17 @@ def submit():
 def reset_input():
     prompt_entry.delete(first="0", last=END)
     
-def stop_models():
+def stop_program():
     stop_list = req.get("http://localhost:11434/api/ps")
     stop_list = [m["name"] for m in stop_list.json()["models"]]
     for model in stop_list:
         os.system("ollama stop " + model)
-    
+    root.destroy()
 
 root = Tk()
 root.title("Test Bot")
 root.geometry("505x700")
+root.protocol("WM_DELETE_WINDOW", stop_program)
 
 style = ttk.Style()
 style.map(
@@ -157,7 +158,7 @@ quit_button = ttk.Button(
     mainframe, 
     text="Quit",
     style="danger.TButton",
-    command=lambda: [root.destroy(), stop_models()]
+    command=stop_program()
     )
 quit_button.place(
     x=400, 
