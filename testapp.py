@@ -5,6 +5,7 @@ from ollama import chat
 from ollama import ChatResponse
 import requests as req
 import os
+import psutil
 
 # Define colors.
 neon_green = "#18f50a"
@@ -44,7 +45,7 @@ def submit():
 
     response_stats = prompt_tokens + "\n" + response_tokens
     chat_history = prompt + (response.message.content)
-    stats.insert(END, response_stats)
+    stats.insert(END, "CPU: " + cpu_model + "\nTotal Memory: " + str(total_mem) + " GB\n\n" + response_stats)
 
 # Clear prompt input field on button press.
 def reset_input():
@@ -55,11 +56,27 @@ def stop_models():
     stop_list = [m["name"] for m in stop_list.json()["models"]]
     for model in stop_list:
         os.system("ollama stop " + model)
-    
+
+# System info functions 
+# Still need to add CPU model name function for windows compatibility, currently only works on linux.    
+def get_cpu_model():
+    try:
+        with open("/proc/cpuinfo", "r") as f:
+            for line in f:
+                if "model name" in line:
+                    return line.split(":")[1].strip()
+    except:
+        return "Unknown CPU"
+
+# System info variables
+cpu_model = get_cpu_model()
+mem = psutil.virtual_memory()
+total_mem = round(mem.total / (1024 ** 3), 2)
+
 
 root = Tk()
 root.title("Test Bot")
-root.geometry("505x700")
+root.geometry("505x750")
 
 style = ttk.Style()
 style.map(
@@ -81,7 +98,7 @@ mainframe.place(
     x=0, 
     y=0, 
     width=500, 
-    height=700
+    height=750
 )
 
 # Chat window
@@ -182,9 +199,9 @@ stats.place(
     x=5, 
     y=565, 
     width=495, 
-    height=130
+    height=180
     )
-
+stats.insert(END, "CPU: " + cpu_model + "\nTotal Memory: " + str(total_mem) + " GB\n\n")
 
 load_models()
 root.mainloop()
